@@ -1,0 +1,22 @@
+version: "3"
+
+services:
+  node1:
+    build: .
+    image: hello_world
+    environment:
+      DNS_SEED: 1
+    ports:
+      - "8888:8888"
+
+  node2:
+    image: hello_world
+
+  node3:
+    image: hello_world
+    
+  node4:
+    image: hello_world
+
+  node5:
+    image: hello_world
