@@ -1,0 +1,18 @@
+import pytest
+
+from blockchain import Block
+
+
+def test_block():
+	genesis_block = Block(**{
+		'version': 0,
+		'previous_block_hash': None,
+		'merkle_tree_hash': None,
+		'timestamp': 1507593600,
+		'nbits': 504382016,
+		'nonce': 0
+	})
+	block_with_nonce = genesis_block.mine()
+	assert block_with_nonce.nonce != genesis_block.nonce
+	assert block_with_nonce._base_hash == b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x80\r\xdcY@B\x10\x1e'
+	assert block_with_nonce.nonce == 144875

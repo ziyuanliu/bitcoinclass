@@ -6,7 +6,7 @@ In this module, we will beginning to explore the peer to peer nature of the bloc
 
 ## Goal
 
-The goal of this module is have the students first install docker and PYTHON 3.6 locally. We will then proceed to create a little p2p hello world. The goal is make sure that the students have a very easy time understanding and implementing in a p2p environment. Along with that completed, we should have a very good idea of what the backbone of our networking structure should be.
+The goal of this module is to have the students first install docker and PYTHON 3.6 locally. We will then proceed to create a little p2p hello world. The goal is make sure that the students have a very easy time understanding and implementing in a p2p environment. Along with that completed, we should have a very good idea of what the backbone of our networking structure should be.
 
 
 ## Infrastructure
