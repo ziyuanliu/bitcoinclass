@@ -1,13 +1,16 @@
 import ecdsa
 import hashlib
 import binascii
+import logging
 
 from base58 import b58encode_check
 from functools import lru_cache
-from transaction import get_utxos_for_addr, OutPoint, TxOut, TxIn, Transaction, SignatureScript
+from transaction import UTXOManager, OutPoint, TxOut, TxIn, Transaction, SignatureScript
 from utils import sha256d_hexdigest
 from serialization import serialize
 from typing import Iterable
+
+logger = logging.getLogger(__name__)
 
 TRANSACTION_FEE = 1000
 
@@ -63,7 +66,7 @@ def build_transaction(to_pubkey, value_to_send, my_pubkey, signing_key, fee=TRAN
     """
 
     # first grab all the utxo belonging to my_pubkey, sort utxo ascendingly by value and height
-    utxos = set(sorted(get_utxos_for_addr(my_pubkey), key=lambda utxo: (utxo.value, utxo.height)))
+    utxos = set(sorted(UTXOManager().get_utxos_for_addr(my_pubkey), key=lambda utxo: (utxo.value, utxo.height)))
 
     total_to_send = value_to_send + fee
     to_be_spent = []
@@ -85,15 +88,15 @@ def build_transaction(to_pubkey, value_to_send, my_pubkey, signing_key, fee=TRAN
     txins = []
     current_value = 0
     for utxo in to_be_spent:
+        if current_value < value_to_send:
+            txins.append(make_txin(signing_key, utxo.outpoint, txout))
         current_value += utxo.value
-        if current_value > total_to_send:
-            txn = make_txin(signing_key, utxo.outpoint, txout_change)
-        else:
-            txn = make_txin(signing_key, utxo.outpoint, txout)
-        txins.append(txn)
+        if current_value >= value_to_send:
+            txins.append(make_txin(signing_key, utxo.outpoint, txout_change))
 
     if change_amt < 0:
         raise ValueError(f'insufficient funds {current_value}')
 
+    logger.info(f'make txouts {[txout, txout_change]}')
     return Transaction(txins=txins, txouts=[txout, txout_change])
 

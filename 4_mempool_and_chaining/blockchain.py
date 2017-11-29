@@ -14,9 +14,8 @@ from utils import (
     sha256d, sha256d_hexdigest, internal_order, uint256_from_compact,
     compact_from_uint256
 )
-from transaction import Transaction, MerkleNode, utxo_set, add_to_utxo
+from transaction import Transaction, MerkleNode, UTXOManager
 from serialization import register_namedtuple
-from chainmanager import ChainManager
 
 logging.basicConfig(
     level=getattr(logging, 'INFO'),
@@ -46,18 +45,31 @@ class Block(NamedTuple):
         """
         fees_dict = {}
 
-        def utxo_from_block(txin):
-            tx = [t.txouts for t in self.txns if t.id == txin.outpoint.txid]
-            return tx[0][txin.outpoint.txout_idx] if tx else None
+        def utxo_from_block(txin, block=self):
+            tx = [t.txouts for t in block.txns if t.id == txin.outpoint.txid]
+            if tx:
+                return tx[0][txin.outpoint.txout_idx]
+            elif block.previous_block_hash:
+                from chainmanager import ChainManager
+                chain_mgr = ChainManager()
+                prev_block = chain_mgr.find_by_id(block.previous_block_hash)
+                if not prev_block:
+                    return None
+
+                return utxo_from_block(txin, prev_block)
+            else:
+                return None
 
         def find_utxo(txin):
-            return utxo_set.get(txin.outpoint) or utxo_from_block(txin)
+            return UTXOManager().utxo_set.get(txin.outpoint) or utxo_from_block(txin)
 
         for txn in self.txns:
             if txn.is_coinbase:
                 continue
-            spent = sum(find_utxo(i).value for i in txn.txins)
+            utxos = {find_utxo(i) for i in txn.txins}
+            spent = sum(utxo.value for utxo in utxos if utxo)
             sent = sum(o.value for o in txn.txouts)
+
             fees_dict[txn.id] = (spent - sent)
 
         return fees_dict
@@ -105,6 +117,7 @@ class Block(NamedTuple):
         """
 
         # clears the mine_interrupt Event, sets it
+        from chainmanager import ChainManager
         ChainManager.mine_interrupt.clear()
 
         start = time.time()
@@ -141,9 +154,8 @@ class Block(NamedTuple):
             nonce=0,
             txns=txns
         )
-        logger.info(f'mine {utxo_set}')
         fees = block.fees
-        logger.info(f'transaction fee is {fees}')
+        logger.info(f'fees are {fees}')
         coinbase_txn = Transaction.create_coinbase(pay_coinbase_to_addr, 500000 + fees)
 
         block = block._replace(txns=[coinbase_txn, *block.txns])

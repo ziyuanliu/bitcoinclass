@@ -1,8 +1,9 @@
 import pytest
 
-from blockchain import Block, ChainManager, 
+from blockchain import Block 
 from transaction import *
 from wallet import build_transaction, pubkey_to_address, signing_key_from_bytes, TRANSACTION_FEE
+from chainmanager import ChainManager
 
 # here's a sample pub/private key generated from wallet.py
 # wallet 1
@@ -14,6 +15,7 @@ address_pk_1 = b'\x9d\x95N\xc4%\xf6W\xa0\x98\xd6X\xf2\x881w\xd6\x11y\xf2\xe7^[\x
 address_2 = '1Q3DzrqjyK54rGxqan9aiEWgRN5RrQ4Whb'
 address_pk_2 = b' O\x98\xe2\xac\xf0\n1\xc5\xc0\x99\xc8\xbf\xccC1\x96\xc2\xe3\x91*#\xb9&\xbd\xc5\xd6\xbas\xafF\n'
 
+signing_key_1 = signing_key_from_bytes(address_pk_1)
 
 genesis_transactions = [Transaction(txins=[
     TxIn(outpoint=None, signature=SignatureScript(
@@ -34,6 +36,7 @@ genesis_block = Block(**{
 	'txns': genesis_transactions
 })
 
+block_with_nonce = genesis_block.mine()
 
 def test_serialization():
 	from serialization import namedtuple_cls_registry
@@ -53,8 +56,9 @@ def test_merkle_tree():
 
 
 def test_block():
-	UTXOManager().utxo_set.clear()
-	block_with_nonce = genesis_block.mine()
+	utxo_mgr = UTXOManager()
+	utxo_mgr.utxo_set.clear()
+
 	chain_mgr = ChainManager()
 	chain_mgr.add_block_to_chain(block_with_nonce)
 
@@ -63,20 +67,28 @@ def test_block():
 	assert block_with_nonce._base_hash == b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x18\xff\x02\xdd\xbe\x1c5\xef\xc7M\xc4J\xa8G\xcf\r&\t\xf1\xde/\x05\xfd\xed\xeb\xc4\xcf\xb7k\x1e\xbd\xb6\x80\r\xdcY@B\x10\x1e'
 	assert block_with_nonce.nonce == 161201
 
-	assert get_current_balance_for_addr(address_1) == 5000000
+	assert len(utxo_mgr.utxo_set) == 1
+	assert UTXOManager().get_current_balance_for_addr(address_1) == 5000000
 
 	# let's add some additional spending here
 	# let's send some money from wallet 1 (address_1) to 2 (1Q3DzrqjyK54rGxqan9aiEWgRN5RrQ4Whb)
-	signing_key = signing_key_from_bytes(address_pk_1)
-	txn1 = build_transaction(address_2, 50000, address_1, signing_key)
-	txn2 = build_transaction(address_2, 50000, address_1, signing_key)
+	txn1 = build_transaction(address_2, 50000, address_1, signing_key_1)
+	txn2 = build_transaction(address_2, 50000, address_1, signing_key_1)
 	txns = [txn1, txn2]
 
-	second_block = Block.assemble_and_solve_block(block_with_nonce.id, address_1, [txn1, txn2])
+	second_block = Block.assemble_and_solve_block(block_with_nonce.id, address_2, txns)
+	chain_mgr.add_block_to_chain(second_block)
+
+	# there should be 5 utxo
+	assert len(utxo_mgr.utxo_set) == 5
+
 	assert second_block.transaction_fees[txn1.id] == TRANSACTION_FEE
 	assert second_block.transaction_fees[txn2.id] == TRANSACTION_FEE
 
 	assert second_block.fees == len(txns) * TRANSACTION_FEE
+
+	# should be 5000000 - 51000 - 51000
+	assert UTXOManager().get_current_balance_for_addr(address_1) == 10400000
 
 
 def test_mempool():
@@ -84,6 +96,6 @@ def test_mempool():
 	from mempool import Mempool
 
 	mempool = Mempool()
-	mempool.
+
 	
 

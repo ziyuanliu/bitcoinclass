@@ -7,7 +7,7 @@ Will include data structures to allow for the addition of transactions
 import logging
 import time
 
-from utils import sha256d
+from utils import sha256d, Singleton
 from typing import Mapping, NamedTuple, Union, Iterable
 from serialization import register_namedtuple
 
@@ -168,11 +168,11 @@ class UTXOManager(metaclass=Singleton):
         return [utxo for utxo in self.utxo_set.values() if utxo.pubkey == pubkey]
 
     def get_current_balance_for_addr(self, pubkey: str) -> int:
+        logger.info(f'my utxos {self.get_utxos_for_addr(pubkey)}')
         return sum(utxo.value for utxo in self.get_utxos_for_addr(pubkey))
 
     def add_to_utxo(self, txout, tx, idx, is_coinbase, height):
         utxo = UnspentTxOut(*txout, txid=tx.id, txout_idx=idx, is_coinbase=is_coinbase, height=height)
-        logger.info(f'adding tx outpoint {utxo.outpoint} to utxo_set')
         self.utxo_set[utxo.outpoint] = utxo
 
     def rm_from_utxo(self, txid, txout_idx):

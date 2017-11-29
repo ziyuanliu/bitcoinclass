@@ -2,6 +2,7 @@ import hashlib
 import binascii
 
 from typing import Union
+from functools import wraps
 
 
 def sha256d_hexdigest(data: Union[str, bytes]) -> bytes:

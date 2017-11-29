@@ -71,7 +71,7 @@ def test_block():
 	txn2 = build_transaction(address_2, 50000, address_1, signing_key)
 	txns = [txn1, txn2]
 
-	second_block = Block.assemble_and_solve_block(block_with_nonce.id, address_1, [txn1, txn2])
+	second_block = Block.assemble_and_solve_block(block_with_nonce.id, address_1, txns)
 	assert second_block.transaction_fees[txn1.id] == TRANSACTION_FEE
 	assert second_block.transaction_fees[txn2.id] == TRANSACTION_FEE
 

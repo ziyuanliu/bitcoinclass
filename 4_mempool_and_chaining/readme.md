@@ -11,6 +11,6 @@ The goal of this module is implement a simple mempool data structure that will a
 
 ## Infrastructure
 
-
+Here we need to add a lock to ensure that we do not break python when using multithreaded operations.
 
 ## Additional readings

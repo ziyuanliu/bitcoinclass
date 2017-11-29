@@ -13,4 +13,4 @@ The materials taught here will be largely introduced in a more pythonic object-o
 
 ## Credits
 
-The base of this project was largely inspired by: [TinyChain](https://github.com/jamesob/tinychain); the style used in that project is a good standard for aspiring Python engineers.
+The base of this project was largely inspired by: [TinyChain](https://github.com/jamesob/tinychain); a rework of [Minicoin](https://github.com/ziyuanliu/minicoin)
